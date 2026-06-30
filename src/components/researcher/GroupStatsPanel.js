@@ -8,11 +8,11 @@ function std(arr) {
 }
 
 const DIMS = [
-  { key: 'neuroticism',   label: 'Neuroticism',     path: r => r.wellbeing?.neuroticism?.zscore  },
-  { key: 'traitAnxiety',  label: 'Trait anxiety',   path: r => r.wellbeing?.traitAnxiety?.zscore  },
-  { key: 'chronicStress', label: 'Chronic stress',  path: r => r.wellbeing?.chronicStress?.zscore },
-  { key: 'phq9',          label: 'PHQ-9',            path: r => r.questionnaire?.phq9?.score       },
-  { key: 'gad7',          label: 'GAD-7',            path: r => r.questionnaire?.gad7?.score       },
+  { key: 'neuroticism',   label: 'Neuroticism',    path: r => r.wellbeing?.neuroticism?.zscore  },
+  { key: 'traitAnxiety',  label: 'Trait anxiety',  path: r => r.wellbeing?.traitAnxiety?.zscore  },
+  { key: 'chronicStress', label: 'Chronic stress', path: r => r.wellbeing?.chronicStress?.zscore },
+  { key: 'phq9',          label: 'PHQ-9',           path: r => r.questionnaire?.phq9?.score       },
+  { key: 'gad7',          label: 'GAD-7',           path: r => r.questionnaire?.gad7?.score       },
 ];
 
 export default function GroupStatsPanel({ history }) {
@@ -25,8 +25,8 @@ export default function GroupStatsPanel({ history }) {
         <div className="section-label" style={{ margin: 0 }}>Group statistics (n={history.length})</div>
         <div style={{ display: 'flex', gap: 10 }}>
           {Object.entries(conditionCounts).map(([c, n]) => (
-            <span key={c} style={{ fontSize: 12, color: '#57606A' }}>
-              <span style={{ fontFamily: 'var(--mono)', fontWeight: 600, color: '#24292F' }}>{n}</span> {c}
+            <span key={c} style={{ fontSize: 12, color: 'var(--fog)' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--white)' }}>{n}</span> {c}
             </span>
           ))}
         </div>
@@ -38,12 +38,15 @@ export default function GroupStatsPanel({ history }) {
           const m = mean(vals);
           const s = std(vals);
           return (
-            <div key={key} style={{ textAlign: 'center', padding: '12px 8px', borderRadius: 8, background: '#F6F8FA', border: '1px solid #E1E4E8' }}>
-              <div style={{ fontSize: 10, color: '#8B949E', marginBottom: 6, fontFamily: 'var(--mono)' }}>{label}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 16, fontWeight: 500, color: '#24292F' }}>
+            <div key={key} style={{
+              textAlign: 'center', padding: '12px 8px', borderRadius: 8,
+              background: 'var(--surface-light)', border: '1px solid var(--line)',
+            }}>
+              <div style={{ fontSize: 10, color: 'var(--fog)', marginBottom: 6, fontFamily: 'var(--mono)' }}>{label}</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 16, fontWeight: 500, color: 'var(--white)' }}>
                 {vals.length ? m.toFixed(2) : '—'}
               </div>
-              <div style={{ fontSize: 10, color: '#8B949E', marginTop: 2 }}>
+              <div style={{ fontSize: 10, color: 'var(--fog)', marginTop: 2 }}>
                 {vals.length ? `± ${s.toFixed(2)}` : 'no data'}
               </div>
             </div>

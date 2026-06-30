@@ -33,8 +33,8 @@ export default function ResearcherDashboard({ history, setResult, selectedSubjec
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 600, color: '#24292F', marginBottom: 4 }}>Cohort dashboard</h1>
-          <div style={{ fontSize: 13, color: '#8B949E' }}>{history.length} subjects · Researcher mode</div>
+          <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--white)', marginBottom: 4 }}>Cohort dashboard</h1>
+          <div style={{ fontSize: 13, color: 'var(--fog)' }}>{history.length} subjects · Clinician mode</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-sm" onClick={() => exportCohortCsv(history)}>Export CSV</button>
@@ -48,7 +48,7 @@ export default function ResearcherDashboard({ history, setResult, selectedSubjec
 
       {/* Filter chips */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 12, color: '#8B949E' }}>Filter:</span>
+        <span style={{ fontSize: 12, color: 'var(--fog)' }}>Filter:</span>
         <button type="button" className={`chip${!conditionFilter ? ' active' : ''}`} onClick={() => setConditionFilter(null)}>
           All
         </button>
@@ -79,11 +79,11 @@ export default function ResearcherDashboard({ history, setResult, selectedSubjec
       {selectedSubjects.length > 0 && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          background: '#0D1117', border: '1px solid #30363D', borderRadius: 10,
+          background: 'var(--slate)', border: '1px solid var(--line)', borderRadius: 10,
           padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 14,
           boxShadow: '0 4px 20px rgba(0,0,0,.3)', zIndex: 50,
         }}>
-          <span style={{ fontSize: 13, color: '#8B949E' }}>
+          <span style={{ fontSize: 13, color: 'var(--fog)' }}>
             {selectedSubjects.length} selected
           </span>
           <button
@@ -97,7 +97,7 @@ export default function ResearcherDashboard({ history, setResult, selectedSubjec
           <button
             className="btn btn-sm"
             onClick={() => setSelectedSubjects([])}
-            style={{ color: '#8B949E' }}
+            style={{ color: 'var(--fog)' }}
           >
             Clear
           </button>
