@@ -61,11 +61,11 @@ export const API_BASE_URL  = 'http://localhost:8000';  // your FastAPI server
  * @param {Object} subjectMeta - { id, age, sex, notes }
  * @returns {Promise<AnalysisResult>}
  */
-export async function analyseScan(file, subjectMeta) {
+export async function analyseScan(file, subjectMeta, questionnaireData) {
   if (MOCK_MODE) {
-    return mockAnalyse(file, subjectMeta);
+    return mockAnalyse(file, subjectMeta, questionnaireData);
   }
-  return realAnalyse(file, subjectMeta);
+  return realAnalyse(file, subjectMeta, questionnaireData);
 }
 
 /**
@@ -102,13 +102,14 @@ export async function checkModelStatus() {
 
 // ── Real backend call (used once MOCK_MODE = false) ───────────────────────────
 
-async function realAnalyse(file, subjectMeta) {
+async function realAnalyse(file, subjectMeta, questionnaireData) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('subject_id', subjectMeta.id || '');
   formData.append('age', subjectMeta.age || '');
   formData.append('sex', subjectMeta.sex || '');
   formData.append('notes', subjectMeta.notes || '');
+  if (questionnaireData) formData.append('questionnaire', JSON.stringify(questionnaireData));
 
   const res = await fetch(`${API_BASE_URL}/api/analyse`, {
     method: 'POST',
@@ -126,6 +127,9 @@ async function realAnalyse(file, subjectMeta) {
 
 // ── Mock implementation — realistic fake data, used until backend exists ──────
 
+import { scorePhq9, scoreGad7, scorePss10, scoreTipi } from '../utils/questionnaireScoring';
+import { computeMultiModalInsights } from '../utils/multiModalInsights';
+
 const CONDITION_PROFILES = {
   none: {
     conditionProbs: { none: 0.82, mild: 0.14, moderate: 0.04 },
@@ -140,6 +144,14 @@ const CONDITION_PROFILES = {
       { name: 'Insula (R)',         score: 0.15 },
     ],
     summary: 'No significant indicators of elevated stress or anxiety detected. Activation patterns across limbic and prefrontal regions are within the typical range for this population.',
+    fmriProfile: { amygdalaScore: 0.21, cinglateScore: 0.18, insulaScore: 0.15, vmPfcScore: 0.12 },
+    mockPhysio: { systolic: 116, diastolic: 74, heartRate: 62, hrv: 58, sleepHours: 7.5, exerciseFrequency: 4 },
+    mockQuestionnaire: { phq9Answers: [0,0,0,0,0,0,0,0,0], gad7Answers: [0,0,0,0,0,0,0], pss10Answers: [0,1,0,1,4,3,4,3,0,0], tipiAnswers: [5,2,6,2,5,3,6,3,5,2] },
+    recommendations: [
+      { category: 'Sleep', action: 'Maintain your current sleep schedule', rationale: 'Consistent 7–9 hours supports the low stress markers your scan shows.' },
+      { category: 'Exercise', action: 'Keep up aerobic activity', rationale: 'Your brain activation patterns are consistent with regular physical activity benefits.' },
+      { category: 'Mindfulness', action: 'Continue current practices', rationale: 'Prefrontal regulation looks healthy — mindfulness is likely contributing.' },
+    ],
   },
   mild: {
     conditionProbs: { none: 0.22, mild: 0.61, moderate: 0.17 },
@@ -155,6 +167,14 @@ const CONDITION_PROFILES = {
       { name: 'vmPFC',              score: 0.33 },
     ],
     summary: 'Mild elevation in limbic reactivity is present, with the left amygdala and anterior cingulate showing above-average activation. This pattern is consistent with mild stress or low-level trait anxiety rather than a clinical condition.',
+    fmriProfile: { amygdalaScore: 0.58, cinglateScore: 0.51, insulaScore: 0.44, vmPfcScore: 0.33 },
+    mockPhysio: { systolic: 126, diastolic: 80, heartRate: 72, hrv: 42, sleepHours: 6.2, exerciseFrequency: 2 },
+    mockQuestionnaire: { phq9Answers: [1,1,1,0,1,0,1,0,0], gad7Answers: [1,1,1,1,0,1,0], pss10Answers: [1,2,1,2,3,2,3,2,1,1], tipiAnswers: [4,3,4,3,4,3,4,3,4,3] },
+    recommendations: [
+      { category: 'Sleep', action: 'Prioritise 7–8 hours per night', rationale: 'Mild amygdala elevation correlates with sleep debt; improving sleep can reduce it.' },
+      { category: 'Breathing', action: 'Try 5-minute box breathing daily', rationale: 'Anterior cingulate activation suggests benefit from slow breathing regulation.' },
+      { category: 'Activity', action: 'Add one 20-min walk per week', rationale: 'Aerobic activity lowers insula reactivity over 4–6 weeks.' },
+    ],
   },
   moderate: {
     conditionProbs: { none: 0.06, mild: 0.21, moderate: 0.73 },
@@ -171,20 +191,52 @@ const CONDITION_PROFILES = {
       { name: 'dlPFC (L)',          score: 0.41 },
     ],
     summary: 'Substantially elevated activation across the limbic-prefrontal stress network. Left amygdala and anterior cingulate activity are markedly above the population mean, a pattern frequently associated with chronic stress and elevated trait anxiety.',
+    fmriProfile: { amygdalaScore: 0.88, cinglateScore: 0.79, insulaScore: 0.71, vmPfcScore: 0.63 },
+    mockPhysio: { systolic: 138, diastolic: 88, heartRate: 84, hrv: 28, sleepHours: 5.5, exerciseFrequency: 1 },
+    mockQuestionnaire: { phq9Answers: [2,2,2,1,2,1,2,1,1], gad7Answers: [2,2,2,2,2,2,1], pss10Answers: [2,3,2,3,2,2,2,2,2,2], tipiAnswers: [3,4,3,4,3,4,3,4,3,4] },
+    recommendations: [
+      { category: 'Professional support', action: 'Consider speaking with a mental health professional', rationale: 'Elevated stress markers across multiple domains suggest benefit from professional guidance.' },
+      { category: 'Stress reduction', action: 'Identify and reduce your top two stressors this week', rationale: 'High prefrontal load reduces capacity to regulate the amygdala — even small reductions in stressor burden help.' },
+      { category: 'Sleep', action: 'Set a consistent bedtime and avoid screens 1 hour before', rationale: 'Chronic stress disrupts sleep architecture, which further amplifies limbic reactivity.' },
+    ],
   },
 };
 
-function mockAnalyse(file, subjectMeta) {
+function mockAnalyse(file, subjectMeta, questionnaireData) {
   return new Promise(resolve => {
     setTimeout(() => {
-      // Pick a profile based on a hash of the filename so results feel
-      // consistent for the same file rather than fully random each time
       const seed    = (file?.name || 'default').length % 3;
       const profile = seed === 0 ? 'none' : seed === 1 ? 'mild' : 'moderate';
       const data    = CONDITION_PROFILES[profile];
 
       const topProb = Math.max(...Object.values(data.conditionProbs));
-      const entropy = 1 - topProb;   // crude proxy for the mock
+      const entropy = 1 - topProb;
+
+      // Derive questionnaire scores from provided data or fall back to mock defaults
+      let questionnaire = null;
+      let physiological = null;
+
+      if (questionnaireData) {
+        const phq9  = scorePhq9(questionnaireData.phq9Answers  || data.mockQuestionnaire.phq9Answers);
+        const gad7  = scoreGad7(questionnaireData.gad7Answers  || data.mockQuestionnaire.gad7Answers);
+        const pss10 = scorePss10(questionnaireData.pss10Answers || data.mockQuestionnaire.pss10Answers);
+        const tipi  = scoreTipi(questionnaireData.tipiAnswers  || data.mockQuestionnaire.tipiAnswers);
+        questionnaire = { phq9, gad7, pss10, tipi };
+
+        const p = questionnaireData.physiological || {};
+        physiological = {
+          systolic:          Number(p.systolic)          || data.mockPhysio.systolic,
+          diastolic:         Number(p.diastolic)         || data.mockPhysio.diastolic,
+          heartRate:         Number(p.heartRate)         || data.mockPhysio.heartRate,
+          hrv:               Number(p.hrv)               || data.mockPhysio.hrv,
+          sleepHours:        Number(p.sleepHours)        || data.mockPhysio.sleepHours,
+          exerciseFrequency: Number(p.exerciseFrequency) || data.mockPhysio.exerciseFrequency,
+        };
+      }
+
+      const multiModalInsights = questionnaire || physiological
+        ? computeMultiModalInsights(data.fmriProfile, questionnaire, physiological)
+        : null;
 
       resolve({
         id:            `RPT-${Date.now()}`,
@@ -193,12 +245,90 @@ function mockAnalyse(file, subjectMeta) {
         topCondition:  profile,
         confidence:    entropy < 0.3 ? 'High' : entropy < 0.55 ? 'Medium' : 'Low',
         entropy:       Number(entropy.toFixed(2)),
-        conditionProbs: data.conditionProbs,
-        wellbeing:      data.wellbeing,
-        regions:        data.regions,
-        summary:        data.summary,
+        conditionProbs:   data.conditionProbs,
+        wellbeing:        data.wellbeing,
+        regions:          data.regions,
+        summary:          data.summary,
+        physiological,
+        questionnaire,
+        multiModalInsights,
+        recommendations:  data.recommendations,
       });
-    }, 0); // delay handled by the ProcessingPage's own step timers
+    }, 0);
+  });
+}
+
+/**
+ * Analyse wearable metrics (+ optional questionnaire) and return an
+ * AnalysisResult shaped object — same shape as analyseScan() so ResultsPage
+ * works unchanged for personal-mode users.
+ *
+ * @param {Object} wearableData      - { file, manual: { hrv, heartRate, sleepHours, exerciseDays } }
+ * @param {Object} questionnaireData - same questionnaire shape, or null
+ */
+export async function analyseWearable(wearableData, questionnaireData) {
+  if (MOCK_MODE) {
+    return mockAnalyseWearable(wearableData, questionnaireData);
+  }
+  // Real path: send to backend endpoint (not yet implemented)
+  throw new Error('Real wearable analysis backend not yet connected.');
+}
+
+function mockAnalyseWearable(wearableData, questionnaireData) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const manual = wearableData?.manual || {};
+      const hrv  = Number(manual.hrv)        || 40;
+      const hr   = Number(manual.heartRate)  || 68;
+      const sleep = Number(manual.sleepHours) || 7;
+      const ex    = Number(manual.exerciseDays) || 3;
+
+      // Simple heuristic: derive stress level from HRV + sleep
+      let profile = 'none';
+      if (hrv < 30 || sleep < 6 || hr > 80) profile = 'moderate';
+      else if (hrv < 45 || sleep < 7 || hr > 72) profile = 'mild';
+
+      const data = CONDITION_PROFILES[profile];
+      const topProb = Math.max(...Object.values(data.conditionProbs));
+      const entropy = 1 - topProb;
+
+      let questionnaire = null;
+      if (questionnaireData) {
+        const phq9  = scorePhq9(questionnaireData.phq9Answers  || data.mockQuestionnaire.phq9Answers);
+        const gad7  = scoreGad7(questionnaireData.gad7Answers  || data.mockQuestionnaire.gad7Answers);
+        const pss10 = scorePss10(questionnaireData.pss10Answers || data.mockQuestionnaire.pss10Answers);
+        const tipi  = scoreTipi(questionnaireData.tipiAnswers  || data.mockQuestionnaire.tipiAnswers);
+        questionnaire = { phq9, gad7, pss10, tipi };
+      }
+
+      const physiological = {
+        systolic:          data.mockPhysio.systolic,
+        diastolic:         data.mockPhysio.diastolic,
+        heartRate:         hr,
+        hrv,
+        sleepHours:        sleep,
+        exerciseFrequency: ex,
+      };
+
+      const multiModalInsights = computeMultiModalInsights(data.fmriProfile, questionnaire, physiological);
+
+      resolve({
+        id:            `RPT-${Date.now()}`,
+        subjectId:     wearableData?.subjectId || 'Personal',
+        date:          new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        topCondition:  profile,
+        confidence:    entropy < 0.3 ? 'High' : entropy < 0.55 ? 'Medium' : 'Low',
+        entropy:       Number(entropy.toFixed(2)),
+        conditionProbs:    data.conditionProbs,
+        wellbeing:         data.wellbeing,
+        regions:           data.regions,
+        summary:           data.summary,
+        physiological,
+        questionnaire,
+        multiModalInsights,
+        recommendations:   data.recommendations,
+      });
+    }, 0);
   });
 }
 
@@ -210,6 +340,23 @@ const MOCK_HISTORY = [
     wellbeing: CONDITION_PROFILES.none.wellbeing,
     regions: CONDITION_PROFILES.none.regions,
     summary: CONDITION_PROFILES.none.summary,
+    physiological: CONDITION_PROFILES.none.mockPhysio,
+    questionnaire: {
+      phq9:  scorePhq9(CONDITION_PROFILES.none.mockQuestionnaire.phq9Answers),
+      gad7:  scoreGad7(CONDITION_PROFILES.none.mockQuestionnaire.gad7Answers),
+      pss10: scorePss10(CONDITION_PROFILES.none.mockQuestionnaire.pss10Answers),
+      tipi:  scoreTipi(CONDITION_PROFILES.none.mockQuestionnaire.tipiAnswers),
+    },
+    multiModalInsights: computeMultiModalInsights(
+      CONDITION_PROFILES.none.fmriProfile,
+      {
+        phq9:  scorePhq9(CONDITION_PROFILES.none.mockQuestionnaire.phq9Answers),
+        gad7:  scoreGad7(CONDITION_PROFILES.none.mockQuestionnaire.gad7Answers),
+        pss10: scorePss10(CONDITION_PROFILES.none.mockQuestionnaire.pss10Answers),
+      },
+      CONDITION_PROFILES.none.mockPhysio,
+    ),
+    recommendations: CONDITION_PROFILES.none.recommendations,
   },
   {
     id: 'RPT-2026-06-14-035', subjectId: 'SUB-035', date: '14 Jun 2026',
@@ -218,6 +365,48 @@ const MOCK_HISTORY = [
     wellbeing: CONDITION_PROFILES.mild.wellbeing,
     regions: CONDITION_PROFILES.mild.regions,
     summary: CONDITION_PROFILES.mild.summary,
+    physiological: CONDITION_PROFILES.mild.mockPhysio,
+    questionnaire: {
+      phq9:  scorePhq9(CONDITION_PROFILES.mild.mockQuestionnaire.phq9Answers),
+      gad7:  scoreGad7(CONDITION_PROFILES.mild.mockQuestionnaire.gad7Answers),
+      pss10: scorePss10(CONDITION_PROFILES.mild.mockQuestionnaire.pss10Answers),
+      tipi:  scoreTipi(CONDITION_PROFILES.mild.mockQuestionnaire.tipiAnswers),
+    },
+    multiModalInsights: computeMultiModalInsights(
+      CONDITION_PROFILES.mild.fmriProfile,
+      {
+        phq9:  scorePhq9(CONDITION_PROFILES.mild.mockQuestionnaire.phq9Answers),
+        gad7:  scoreGad7(CONDITION_PROFILES.mild.mockQuestionnaire.gad7Answers),
+        pss10: scorePss10(CONDITION_PROFILES.mild.mockQuestionnaire.pss10Answers),
+      },
+      CONDITION_PROFILES.mild.mockPhysio,
+    ),
+    recommendations: CONDITION_PROFILES.mild.recommendations,
+  },
+  {
+    id: 'RPT-2026-05-28-031', subjectId: 'SUB-031', date: '28 May 2026',
+    topCondition: 'moderate', confidence: 'High', entropy: 0.27,
+    conditionProbs: CONDITION_PROFILES.moderate.conditionProbs,
+    wellbeing: CONDITION_PROFILES.moderate.wellbeing,
+    regions: CONDITION_PROFILES.moderate.regions,
+    summary: CONDITION_PROFILES.moderate.summary,
+    physiological: CONDITION_PROFILES.moderate.mockPhysio,
+    questionnaire: {
+      phq9:  scorePhq9(CONDITION_PROFILES.moderate.mockQuestionnaire.phq9Answers),
+      gad7:  scoreGad7(CONDITION_PROFILES.moderate.mockQuestionnaire.gad7Answers),
+      pss10: scorePss10(CONDITION_PROFILES.moderate.mockQuestionnaire.pss10Answers),
+      tipi:  scoreTipi(CONDITION_PROFILES.moderate.mockQuestionnaire.tipiAnswers),
+    },
+    multiModalInsights: computeMultiModalInsights(
+      CONDITION_PROFILES.moderate.fmriProfile,
+      {
+        phq9:  scorePhq9(CONDITION_PROFILES.moderate.mockQuestionnaire.phq9Answers),
+        gad7:  scoreGad7(CONDITION_PROFILES.moderate.mockQuestionnaire.gad7Answers),
+        pss10: scorePss10(CONDITION_PROFILES.moderate.mockQuestionnaire.pss10Answers),
+      },
+      CONDITION_PROFILES.moderate.mockPhysio,
+    ),
+    recommendations: CONDITION_PROFILES.moderate.recommendations,
   },
 ];
 

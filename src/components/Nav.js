@@ -1,79 +1,113 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-
-const styles = {
-  nav: {
-    background: '#0D1117', borderBottom: '1px solid #30363D', height: 52,
-    display: 'flex', alignItems: 'center', padding: '0 24px', gap: 8,
-    position: 'sticky', top: 0, zIndex: 100,
-  },
-  logo: {
-    fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 500,
-    color: '#F0F6FC', display: 'flex', alignItems: 'center', gap: 8, marginRight: 20,
-  },
-  dot: { width: 8, height: 8, borderRadius: '50%', background: '#7EE7D0', boxShadow: '0 0 8px #7EE7D0' },
-  links: { display: 'flex', gap: 2, flex: 1 },
-  right: { display: 'flex', alignItems: 'center', gap: 10 },
-  disclaimer: {
-    fontSize: 11, fontFamily: "'DM Mono', monospace", color: '#F0A500',
-    background: 'rgba(240,165,0,.1)', border: '1px solid rgba(240,165,0,.2)',
-    borderRadius: 99, padding: '3px 10px',
-  },
-  avatar: {
-    width: 30, height: 30, borderRadius: '50%',
-    background: 'rgba(126,231,208,.15)', border: '1px solid rgba(126,231,208,.3)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 11, fontWeight: 600, color: '#0E7F6F', fontFamily: "'DM Mono', monospace",
-  },
-};
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const linkStyle = ({ isActive }) => ({
   display: 'inline-flex', alignItems: 'center', padding: '5px 12px', borderRadius: 6,
   fontSize: 13, fontWeight: 500,
-  color: isActive ? '#F0F6FC' : '#8B949E',
-  background: isActive ? 'rgba(240,246,252,.08)' : 'transparent',
+  color: isActive ? '#f0f0ff' : '#94a3b8',
+  background: isActive ? 'rgba(139,92,246,.15)' : 'transparent',
   transition: 'color .15s, background .15s', textDecoration: 'none',
 });
 
-function statusPillStyle(online) {
-  return {
-    fontSize: 10, fontFamily: "'DM Mono', monospace",
-    color: online ? '#7EE7D0' : '#8B949E',
-    display: 'flex', alignItems: 'center', gap: 5,
-  };
-}
-function statusDotStyle(online) {
-  return { width: 6, height: 6, borderRadius: '50%', background: online ? '#7EE7D0' : '#8B949E' };
-}
+export default function Nav({ modelStatus = {}, userRole, setRole }) {
+  const navigate     = useNavigate();
+  const { signOut }  = useAuth();
+  const isMock       = modelStatus?.mode === 'mock';
 
-export default function Nav({ modelStatus = {} }) {
-  const isMock = modelStatus?.mode === 'mock';
+  async function handleSignOut() {
+    setRole(null);
+    await signOut();
+    navigate('/login');
+  }
 
   return (
-    <nav style={styles.nav}>
-      <div style={styles.logo}>
-        <span style={styles.dot} />
-        Wellbeing Insight
+    <nav style={{
+      background: '#1a1a2e', borderBottom: '1px solid #3d3d6b', height: 52,
+      display: 'flex', alignItems: 'center', padding: '0 24px', gap: 8,
+      position: 'sticky', top: 0, zIndex: 100,
+    }}>
+      {/* Logo */}
+      <div style={{
+        fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 500,
+        color: '#f0f0ff', display: 'flex', alignItems: 'center', gap: 8, marginRight: 20,
+      }}>
+        <span style={{ fontSize: 18 }}>🧠</span>
+        NeuroInsight
       </div>
 
-      <div style={styles.links}>
-        <NavLink to="/upload"  style={linkStyle}>New scan</NavLink>
+      {/* Links */}
+      <div style={{ display: 'flex', gap: 2, flex: 1 }}>
+        <NavLink to="/upload"  style={linkStyle}>
+          {userRole === 'clinician' ? 'New scan' : 'New analysis'}
+        </NavLink>
         <NavLink to="/history" style={linkStyle}>History</NavLink>
+        {userRole === 'clinician' && (
+          <NavLink to="/cohort" style={linkStyle}>Cohort</NavLink>
+        )}
+        {userRole === 'personal' && (
+          <NavLink to="/dashboard" style={linkStyle}>My Dashboard</NavLink>
+        )}
       </div>
 
-      <div style={styles.right}>
-        <span style={statusPillStyle(modelStatus?.online)}>
-          <span style={statusDotStyle(modelStatus?.online)} />
+      {/* Right side */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* Model status */}
+        <span style={{
+          fontSize: 10, fontFamily: "'DM Mono', monospace",
+          color: modelStatus?.online ? '#a78bfa' : '#94a3b8',
+          display: 'flex', alignItems: 'center', gap: 5,
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: modelStatus?.online ? '#8b5cf6' : '#94a3b8',
+            boxShadow: modelStatus?.online ? '0 0 6px #8b5cf6' : 'none',
+          }} />
           {modelStatus?.online === null || modelStatus?.online === undefined
             ? 'Checking model…'
             : isMock
-              ? 'Demo mode (mock data)'
+              ? 'Demo mode'
               : modelStatus?.online
                 ? 'Model online'
                 : 'Model offline'}
         </span>
-        <span style={styles.disclaimer}>Research use only</span>
-        <div style={styles.avatar}>AP</div>
+
+        {/* Research disclaimer */}
+        <span style={{
+          fontSize: 11, fontFamily: "'DM Mono', monospace", color: '#F0A500',
+          background: 'rgba(240,165,0,.1)', border: '1px solid rgba(240,165,0,.2)',
+          borderRadius: 99, padding: '3px 10px',
+        }}>
+          Research use only
+        </span>
+
+        {/* Role badge */}
+        {userRole && (
+          <span style={{
+            fontSize: 11, fontFamily: "'DM Mono', monospace",
+            color: userRole === 'clinician' ? '#a78bfa' : '#8b5cf6',
+            background: userRole === 'clinician' ? 'rgba(167,139,250,.12)' : 'rgba(139,92,246,.12)',
+            border: `1px solid ${userRole === 'clinician' ? 'rgba(167,139,250,.3)' : 'rgba(139,92,246,.3)'}`,
+            borderRadius: 99, padding: '3px 10px', textTransform: 'capitalize',
+          }}>
+            {userRole}
+          </span>
+        )}
+
+        {/* Sign out */}
+        <button
+          onClick={handleSignOut}
+          style={{
+            fontSize: 11, color: '#94a3b8', background: 'transparent',
+            border: '1px solid #3d3d6b', borderRadius: 6, padding: '4px 10px',
+            cursor: 'pointer', fontFamily: 'inherit',
+            transition: 'color .15s, border-color .15s',
+          }}
+          onMouseEnter={e => { e.target.style.color = '#f0f0ff'; e.target.style.borderColor = '#8b5cf6'; }}
+          onMouseLeave={e => { e.target.style.color = '#94a3b8'; e.target.style.borderColor = '#3d3d6b'; }}
+        >
+          Sign out
+        </button>
       </div>
     </nav>
   );
