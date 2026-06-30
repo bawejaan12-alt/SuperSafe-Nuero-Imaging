@@ -23,7 +23,7 @@ export default function Nav({ modelStatus = {}, userRole, setRole }) {
 
   return (
     <nav style={{
-      background: '#1a1a2e', borderBottom: '1px solid #3d3d6b', height: 52,
+      background: '#1c1c20', borderBottom: '1px solid #2e2e36', height: 52,
       display: 'flex', alignItems: 'center', padding: '0 24px', gap: 8,
       position: 'sticky', top: 0, zIndex: 100,
     }}>

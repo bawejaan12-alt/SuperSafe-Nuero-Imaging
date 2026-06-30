@@ -20,22 +20,22 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
-  --ink:           #1a1a2e;
-  --slate:         #252542;
-  --surface-light: #2e2e55;
-  --fog:           #94a3b8;
-  --line:          #3d3d6b;
+  --ink:           #111114;
+  --slate:         #1c1c20;
+  --surface-light: #26262c;
+  --fog:           #8a8a9a;
+  --line:          #2e2e36;
   --white:         #f0f0ff;
   --accent:        #8b5cf6;
   --accent2:       #a78bfa;
   --warn:          #F0A500;
   --danger:        #F85149;
-  --surface:       #252542;
+  --surface:       #1c1c20;
   --radius:        10px;
   --radius-sm:     6px;
   --mono: 'DM Mono', monospace;
   --sans: 'Inter', system-ui, sans-serif;
-  --shadow: 0 2px 8px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.2);
+  --shadow: 0 2px 8px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.3);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -242,9 +242,10 @@ img { display: block; max-width: 100%; }
 
 /* ── Step number circle (upload page) ────────────────────────────────────── */
 .step-circle {
-  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-  background: rgba(139,92,246,.2); border: 1px solid var(--accent);
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent); border: none;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--accent2);
+  font-family: var(--mono); font-size: 13px; font-weight: 600; color: #fff;
   position: relative; z-index: 1;
+  box-shadow: 0 2px 12px rgba(139,92,246,.35);
 }
